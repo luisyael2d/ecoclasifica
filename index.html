@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EcoClasifica</title>
+<link rel="icon" type="image/svg+xml"href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M8 40C6 20 20 8 42 8c0 22-12 34-30 32z' fill='%233f9b4f'/%3E%3Cpath d='M8 40L30 18' stroke='%231f6b32' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#f1f6ee;--card:#ffffff;--text:#1d2b1f;--muted:#5b6b5e;--line:#cfdccb;--accent:#2f7d4a;--red:#d93636;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a14;--card:#1c2820;--text:#e6f0e7;--muted:#9db3a1;--line:#2e4034;--accent:#5cc383;--red:#ff6b6b}}
+:root[data-theme="dark"]{--bg:#121a14;--card:#1c2820;--text:#e6f0e7;--muted:#9db3a1;--line:#2e4034;--accent:#5cc383;--red:#ff6b6b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;overflow-x:hidden}
+.wrap{max-width:820px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hud{display:flex;gap:16px;align-items:center;font-weight:600}
+#hearts{display:flex;gap:4px}
+.lost{filter:grayscale(1);opacity:.35}
+.sub{color:var(--muted);margin:6px 0 0}
+#stage{height:190px;display:flex;align-items:center;justify-content:center;position:relative}
+.item{width:130px;padding:14px 8px;text-align:center;background:var(--card);border:2px solid var(--line);border-radius:18px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 4px 14px rgba(0,0,0,.12);position:relative;z-index:5}
+.item.drag{cursor:grabbing;z-index:50;box-shadow:0 12px 26px rgba(0,0,0,.25);transform-origin:center}
+.item .e{line-height:0;display:flex;justify-content:center}
+.item .n{font-size:.85rem;font-weight:600;margin-top:6px}
+.bins{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:8px}
+.bin{position:relative;background:var(--card);border:3px solid var(--c);border-radius:16px;text-align:center;padding:14px 4px 10px;transition:transform .15s,background .15s}
+.bin .i{display:flex;justify-content:center;line-height:0}
+.bin .l{font-weight:700;font-size:.85rem;margin-top:4px;color:var(--text)}
+.bin::before{content:"";position:absolute;left:10%;right:10%;top:-3px;height:8px;background:var(--c);border-radius:0 0 8px 8px}
+.bin.hot{transform:scale(1.06);background:color-mix(in srgb,var(--c) 22%,var(--card))}
+.bin.ok{animation:pulse .4s}
+.bin.bad{animation:shake .4s}
+.bin .x{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:4rem;font-weight:900;color:var(--red);background:color-mix(in srgb,var(--card) 70%,transparent);border-radius:13px}
+.bin.bad .x{display:flex}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+@keyframes pulse{50%{transform:scale(1.1);background:color-mix(in srgb,var(--accent) 30%,var(--card))}}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+.overlay.show{display:flex}
+.modal{background:var(--card);border-radius:20px;padding:26px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.modal h2{margin:0 0 6px;font-size:1.6rem}
+.modal p{color:var(--muted);margin:0 0 18px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+button,.btn{font:inherit;font-weight:700;border:0;border-radius:12px;padding:12px 18px;cursor:pointer;background:var(--accent);color:#fff;text-decoration:none;display:inline-block}
+button.alt,.btn.alt{background:transparent;color:var(--text);border:2px solid var(--line)}
+#info{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:14px;padding:14px 16px;margin:12px 0}
+.card h3{margin:0 0 6px;font-size:1.1rem}
+.card p{margin:6px 0}
+.card .ej{color:var(--muted);font-size:.9rem}
+@media (max-width:560px){.bins{grid-template-columns:repeat(3,1fr)}#stage{height:170px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="game">
+  <div class="top">
+    <h1 style="display:flex;align-items:center;gap:8px"><span id="logo" style="line-height:0"></span>EcoClasifica</h1>
+    <div class="hud"><span>Puntos: <span id="score">0</span></span><span id="hearts" aria-label="Vidas"></span></div>
+  </div>
+  <p class="sub">Arrastra cada residuo al bote correcto. Tienes 3 vidas.</p>
+  <div id="stage"></div>
+  <div class="bins" id="bins"></div>
+</section>
+
+<section id="info">
+  <h1>¿Por qué cada residuo va en su bote?</h1>
+  <p class="sub">Separar los residuos es una acción clave del desarrollo sustentable: reduce la contaminación, ahorra recursos y permite reciclar.</p>
+  <div id="cards"></div>
+  <div class="btns" style="margin:18px 0"><a class="btn" href="#juego">↩ Volver a la página principal y reintentar</a></div>
+</section>
+
+</div>
+
+<div class="overlay" id="end" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div id="endIcon" style="height:56px;display:flex;justify-content:center"></div>
+    <h2 id="endTitle">¡Perdiste!</h2>
+    <p id="endText"></p>
+    <div class="btns">
+      <button id="retry">Volver a intentar</button>
+      <a class="btn alt" href="#explicacion">Explicación</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const BINS={
+ org:{n:"Orgánico",i:"🍃",c:"#3f9b4f",why:"Son restos de origen vivo que se descomponen solos. En un bote aparte se convierten en composta, un abono natural. Si se mezclan con otros residuos, se pudren, generan malos olores, lixiviados y gas metano, que contribuye al cambio climático.",ej:"Cáscaras, restos de comida, hojas, cascarones, café."},
+ pet:{n:"PET y plástico",i:"🧴",c:"#d9a516",why:"El plástico tarda cientos de años en degradarse y termina en ríos y océanos dañando a la fauna. Limpio y separado, se puede reciclar para hacer fibras, envases y ropa, y se ahorra petróleo.",ej:"Botellas PET, vasos y bolsas de plástico."},
+ pap:{n:"Papel y cartón",i:"📰",c:"#3b82c4",why:"El papel se fabrica con árboles y mucha agua. Si se recicla limpio y seco, se salvan árboles y se reduce el consumo de energía. Si se moja o se ensucia con comida, ya no sirve para reciclar.",ej:"Periódico, cajas de cartón, hojas, libros, sobres."},
+ vid:{n:"Vidrio",i:"🍾",c:"#14a3a3",why:"El vidrio se puede reciclar una y otra vez sin perder calidad, y reciclarlo gasta menos energía que fabricarlo nuevo. Tarda miles de años en degradarse y si se rompe puede lastimar a quien recoge la basura.",ej:"Botellas, frascos, vasos y copas de vidrio."},
+ ino:{n:"Inorgánico",i:"🚫",c:"#6b7280",why:"Son residuos que no se descomponen fácilmente y que, por estar sucios, mezclados o ser de varios materiales, no se pueden reciclar con facilidad. Van a su propio bote para no contaminar el material reciclable y llegar al relleno sanitario de forma controlada.",ej:"Colillas, curitas, esponjas, cepillos de dientes, papel higiénico usado."}
+};
+const ITEMS=[
+["Cáscara de plátano","🍌","org"],["Manzana mordida","🍎","org"],["Cascarón de huevo","🥚","org"],["Hojas secas","🍂","org"],["Posos de café","☕","org"],["Hueso de pollo","🍗","org"],
+["Botella PET","🧴","pet"],["Vaso desechable","🥤","pet"],["Bolsa de plástico","🛍️","pet"],
+["Periódico","📰","pap"],["Caja de cartón","📦","pap"],["Hoja de cuaderno","📄","pap"],["Libro viejo","📚","pap"],["Sobre","✉️","pap"],
+["Botella de vidrio","🍾","vid"],["Frasco de mermelada","🫙","vid"],["Copa de vidrio","🍷","vid"],
+["Colilla","🚬","ino"],["Curita usada","🩹","ino"],["Cepillo de dientes","🪥","ino"],["Esponja vieja","🧽","ino"],["Papel higiénico usado","🧻","ino"]
+];
+const LEAF='<path d="M8 40C6 20 20 8 42 8c0 22-12 34-30 32z" fill="#3f9b4f"/><path d="M8 40L30 18" stroke="#1f6b32" stroke-width="3" fill="none"/>';
+const PETB='<rect x="19" y="4" width="10" height="6" rx="2" fill="#2b6cb0"/><path d="M20 10h8l6 10v20a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20z" fill="#9fd8f0" stroke="#4a9cc4" stroke-width="2"/><rect x="14" y="26" width="20" height="8" fill="#2f9e6a"/>';
+const NEWS='<rect x="6" y="8" width="36" height="32" rx="3" fill="#e9e9e4" stroke="#999" stroke-width="2"/><rect x="11" y="13" width="26" height="7" fill="#555"/><path d="M11 26h12M11 31h12M11 36h12" stroke="#888" stroke-width="2.5"/><rect x="27" y="25" width="10" height="11" fill="#bbb"/>';
+const GB='<path d="M20 4h8v10c0 4 6 6 6 12v14a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V26c0-6 6-8 6-12z" fill="#3aa75d" fill-opacity=".8" stroke="#237a40" stroke-width="2"/><path d="M19 28v10" stroke="#fff" stroke-opacity=".6" stroke-width="3"/>';
+const CAN='<path d="M12 14h24l-2 28H14z" fill="#8a919d"/><rect x="9" y="9" width="30" height="5" rx="2" fill="#6b7280"/><rect x="19" y="5" width="10" height="4" rx="1" fill="#6b7280"/><path d="M19 20v16M24 20v16M29 20v16" stroke="#cfd3d9" stroke-width="2"/>';
+const ICONS={
+"Orgánico":LEAF,"PET y plástico":PETB,"Papel y cartón":NEWS,"Vidrio":GB,"Inorgánico":CAN,
+"heart":'<path d="M24 42S6 31 6 19a9 9 0 0 1 18-5 9 9 0 0 1 18 5c0 12-18 23-18 23z" fill="#e0334a"/>',
+"leaf":LEAF,
+"win":'<circle cx="24" cy="24" r="20" fill="#2f9e5a"/><path d="M14 25l7 7 13-14" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+"fail":'<circle cx="24" cy="24" r="20" fill="#d93636"/><path d="M16 16l16 16M32 16L16 32" stroke="#fff" stroke-width="5" stroke-linecap="round"/>',
+"Cáscara de plátano":'<path d="M10 14c4 18 16 26 30 22-2 4-8 7-15 6C14 40 6 28 10 14z" fill="#f4c20d" stroke="#c9970a" stroke-width="2"/><path d="M10 14c1-3 3-4 5-4l1 6z" fill="#7a5a1a"/>',
+"Manzana mordida":'<path d="M24 14c-8-6-16 2-12 14 3 9 8 13 12 11 4 2 9-2 12-11 4-12-4-20-12-14z" fill="#d93636"/><path d="M24 14c0-4 2-7 6-8" stroke="#6b4a1f" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="39" cy="26" r="6" fill="var(--card)"/>',
+"Cascarón de huevo":'<path d="M24 6c8 0 13 12 13 20a13 13 0 0 1-26 0C11 18 16 6 24 6z" fill="#f3e6cf" stroke="#c9b48a" stroke-width="2"/><path d="M12 26l5-4 4 4 4-4 4 4 4-4 4 4" fill="none" stroke="#c9b48a" stroke-width="2"/>',
+"Hojas secas":'<path d="M8 38C8 18 22 8 40 8c0 18-10 30-30 30z" fill="#c0702a"/><path d="M8 38L30 16" stroke="#7a3f12" stroke-width="2.5" fill="none"/>',
+"Posos de café":'<path d="M10 18h24v12a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10z" fill="#7b4a2a"/><path d="M34 22h4a4 4 0 0 1 0 10h-5" stroke="#7b4a2a" stroke-width="3" fill="none"/><path d="M18 8c-2 3 2 4 0 7M26 8c-2 3 2 4 0 7" stroke="#999" stroke-width="2" fill="none"/>',
+"Hueso de pollo":'<path d="M14 34L34 14" stroke="#b8a98a" stroke-width="9" stroke-linecap="round"/><path d="M14 34L34 14" stroke="#efe6d2" stroke-width="6" stroke-linecap="round"/><g fill="#efe6d2" stroke="#b8a98a" stroke-width="2"><circle cx="12" cy="30" r="5"/><circle cx="16" cy="36" r="5"/><circle cx="36" cy="18" r="5"/><circle cx="32" cy="12" r="5"/></g>',
+"Botella PET":PETB,
+"Vaso desechable":'<path d="M10 12h28l-4 30H14z" fill="#e8504a"/><rect x="8" y="9" width="32" height="5" rx="2" fill="#f5f5f5" stroke="#bbb"/><path d="M28 9l4-6" stroke="#444" stroke-width="3"/>',
+"Bolsa de plástico":'<path d="M12 16h24l3 26H9z" fill="#e6eef5" stroke="#9db3c4" stroke-width="2"/><path d="M17 16c0-10 14-10 14 0" fill="none" stroke="#9db3c4" stroke-width="3"/>',
+"Periódico":NEWS,
+"Caja de cartón":'<path d="M6 16L24 8l18 8v20l-18 8L6 36z" fill="#c8964f"/><path d="M6 16l18 8 18-8M24 24v20" stroke="#8a6228" stroke-width="2" fill="none"/>',
+"Hoja de cuaderno":'<path d="M10 4h28v40H10z" fill="#fff" stroke="#aaa" stroke-width="2"/><path d="M16 14h16M16 20h16M16 26h16M16 32h16" stroke="#6fa8dc" stroke-width="2"/><path d="M14 4v40" stroke="#e57373" stroke-width="2"/>',
+"Libro viejo":'<rect x="8" y="6" width="32" height="36" rx="3" fill="#8b3a3a"/><rect x="12" y="6" width="3" height="36" fill="#5e2424"/><rect x="19" y="13" width="15" height="8" rx="1" fill="#f0d9a0"/>',
+"Sobre":'<rect x="6" y="12" width="36" height="26" rx="3" fill="#fff" stroke="#999" stroke-width="2"/><path d="M6 14l18 14 18-14" fill="none" stroke="#999" stroke-width="2"/>',
+"Botella de vidrio":GB,
+"Frasco de mermelada":'<rect x="12" y="6" width="24" height="6" rx="2" fill="#c0392b"/><path d="M13 12h22l2 6v22a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V18z" fill="#cfe9f3" stroke="#7fb3c8" stroke-width="2"/><rect x="15" y="24" width="18" height="10" rx="2" fill="#d9534f" opacity=".85"/>',
+"Copa de vidrio":'<path d="M14 6h20c0 12-4 18-10 18S14 18 14 6z" fill="#cfe9f3" stroke="#7fb3c8" stroke-width="2"/><path d="M24 24v16M16 42h16" stroke="#7fb3c8" stroke-width="3" stroke-linecap="round"/><path d="M16 12h16c-1 6-3 9-8 9s-7-3-8-9z" fill="#a0224a"/>',
+"Colilla":'<rect x="6" y="28" width="26" height="8" rx="2" fill="#f3f3f3" stroke="#aaa" stroke-width="2"/><rect x="32" y="28" width="10" height="8" fill="#d98a3a"/><path d="M40 24c0-4 4-4 4-8M34 22c0-3 3-3 3-7" stroke="#aaa" stroke-width="2" fill="none"/>',
+"Curita usada":'<g transform="rotate(-30 24 25)"><rect x="4" y="18" width="40" height="14" rx="7" fill="#f0c9a0" stroke="#cfa070" stroke-width="2"/><rect x="17" y="18" width="14" height="14" fill="#fff"/></g>',
+"Cepillo de dientes":'<rect x="4" y="27" width="32" height="7" rx="3.5" fill="#2fa7b8"/><rect x="30" y="16" width="14" height="11" rx="2" fill="#fff" stroke="#2fa7b8" stroke-width="2"/><path d="M33 16v-6M37 16v-6M41 16v-6" stroke="#7ec8e3" stroke-width="2.5"/>',
+"Esponja vieja":'<rect x="6" y="14" width="36" height="22" rx="5" fill="#e8d44d"/><rect x="6" y="28" width="36" height="8" rx="4" fill="#3d9b5a"/><circle cx="14" cy="20" r="2" fill="#b8a620"/><circle cx="26" cy="19" r="2.5" fill="#b8a620"/><circle cx="34" cy="22" r="2" fill="#b8a620"/>',
+"Papel higiénico usado":'<rect x="14" y="8" width="26" height="32" rx="3" fill="#fff" stroke="#bbb" stroke-width="2"/><ellipse cx="14" cy="24" rx="7" ry="16" fill="#f4f4f4" stroke="#bbb" stroke-width="2"/><ellipse cx="14" cy="24" rx="3" ry="6" fill="#c9a36b"/>'
+};
+const ic=(n,s)=>`<svg viewBox="0 0 48 48" width="${s}" height="${s}" aria-hidden="true">${ICONS[n]||""}</svg>`;
+document.getElementById("logo").innerHTML=ic("leaf",32);
+const $=id=>document.getElementById(id);
+let lives,score,queue,cur,busy=false;
+
+// construir botes y tarjetas de explicación
+Object.entries(BINS).forEach(([k,b])=>{
+  const d=document.createElement("div");d.className="bin";d.dataset.k=k;d.style.setProperty("--c",b.c);
+  d.innerHTML=`<div class="i">${ic(b.n,40)}</div><div class="l">${b.n}</div><div class="x">✕</div>`;
+  $("bins").appendChild(d);
+  const c=document.createElement("div");c.className="card";c.style.setProperty("--c",b.c);
+  c.innerHTML=`<h3 style="display:flex;align-items:center;gap:8px">${ic(b.n,26)} ${b.n}</h3><p>${b.why}</p><p class="ej"><strong>Ejemplos:</strong> ${b.ej}</p>`;
+  $("cards").appendChild(c);
+});
+
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function hearts(){$("hearts").innerHTML=[0,1,2].map(i=>`<span class="${i<lives?"":"lost"}">${ic("heart",28)}</span>`).join("")}
+
+function start(){
+  lives=3;score=0;busy=false;queue=shuffle(ITEMS).slice(0,15);
+  $("score").textContent=0;hearts();$("end").classList.remove("show");$("stage").innerHTML="";next();
+}
+function next(){
+  if(!queue.length){return finish(true)}
+  cur=queue.pop();
+  const el=document.createElement("div");el.className="item";
+  el.innerHTML=`<div class="e">${ic(cur[0],56)}</div><div class="n">${cur[0]}</div>`;
+  $("stage").innerHTML="";$("stage").appendChild(el);busy=false;attach(el);
+}
+function binAt(x,y){
+  return [...document.querySelectorAll(".bin")].find(b=>{const r=b.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom})||null;
+}
+function attach(el){
+  let sx,sy,on=false;
+  el.addEventListener("pointerdown",e=>{
+    if(busy)return;on=true;sx=e.clientX;sy=e.clientY;el.setPointerCapture(e.pointerId);
+    el.classList.add("drag");el.style.transition="none";
+  });
+  el.addEventListener("pointermove",e=>{
+    if(!on)return;
+    el.style.transform=`translate(${e.clientX-sx}px,${e.clientY-sy}px) scale(1.08)`;
+    document.querySelectorAll(".bin").forEach(b=>b.classList.remove("hot"));
+    const b=binAt(e.clientX,e.clientY);if(b)b.classList.add("hot");
+  });
+  const end=e=>{
+    if(!on)return;on=false;el.classList.remove("drag");
+    document.querySelectorAll(".bin").forEach(b=>b.classList.remove("hot"));
+    const b=binAt(e.clientX,e.clientY);
+    if(!b)return back(el);
+    if(b.dataset.k===cur[2]){
+      busy=true;score++;$("score").textContent=score;
+      b.classList.add("ok");setTimeout(()=>b.classList.remove("ok"),400);
+      el.style.transition="transform .2s,opacity .2s";el.style.opacity="0";
+      setTimeout(next,250);
+    }else{
+      busy=true;lives--;hearts();
+      b.classList.add("bad");setTimeout(()=>b.classList.remove("bad"),700);
+      back(el);
+      if(lives<=0)setTimeout(()=>finish(false),600);else setTimeout(()=>busy=false,350);
+    }
+  };
+  el.addEventListener("pointerup",end);
+  el.addEventListener("pointercancel",end);
+}
+function back(el){el.style.transition="transform .3s";el.style.transform="translate(0,0)"}
+function finish(win){
+  busy=true;
+  $("endIcon").innerHTML=ic(win?"win":"fail",56);
+  $("endTitle").textContent=win?"¡Ganaste!":"¡Perdiste!";
+  $("endText").textContent=win?`Clasificaste todos los residuos. Puntos: ${score}`:`Te quedaste sin vidas. Puntos: ${score}`;
+  $("retry").textContent=win?"Jugar de nuevo":"Volver a intentar";
+  $("end").classList.add("show");
+}
+$("retry").onclick=start;
+
+function route(){
+  const info=location.hash==="#explicacion";
+  $("info").style.display=info?"block":"none";
+  $("game").style.display=info?"none":"block";
+  if(info){$("end").classList.remove("show");window.scrollTo(0,0)}
+  else start();
+}
+window.addEventListener("hashchange",route);
+route();
+</script>
+</body>
+</html>
